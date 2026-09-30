@@ -511,6 +511,7 @@ P[7]=()=>{const rs=respuestasActuales();const total=rs.reduce((a,x)=>a+x.est.len
       ${S.sim<2?`<button class="btn" type="button" id="simular">${S.sim===0?'Simular respuestas':'Simular más respuestas'}</button>`:''}
       ${S.sim>0?`<button class="btn ${S.sim<2?'sec':''}" type="button" onclick="ir(8)">Ver resultados</button>`:''}
     </div>
+    ${S.sim===0?`<p class="tenue">En la vida real, las respuestas llegan a medida que los estudiantes contestan. Aquí puede simularlas con un clic.</p>`:''}
     ${S.sim===1?`<p class="tenue">Algunos grupos aún no llegan a ${MINIMO} respuestas: sus resultados quedan ocultos para proteger el anonimato.</p>`:''}
   </div>
   <div class="grid">
@@ -537,6 +538,8 @@ P[7]=()=>{const rs=respuestasActuales();const total=rs.reduce((a,x)=>a+x.est.len
     <div><button class="btn sec" type="button" id="verEnc">Ver la encuesta como estudiante</button></div>
     <div id="encuesta"></div>
   </div>
+  <div class="accion"><button class="btn" type="button" onclick="ir(8)" ${S.sim>0?'':'disabled aria-describedby="ayudaRes"'}>Ver resultados</button></div>
+  ${S.sim>0?'':`<p class="tenue" id="ayudaRes">Para ver resultados, primero pulse <b>Simular respuestas</b> en el recuadro “Respuestas recibidas”, más arriba.</p>`}
 </section>`};
 
 function mensajeWa(){const gs=gruposValidos();return `Hola, profe. Desde ${S.colegio.nombre} vamos a aplicar la Radiografía de la Mente Infantil de Camino, una encuesta anónima de 10 minutos sobre bienestar y aprendizaje.
