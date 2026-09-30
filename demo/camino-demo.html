@@ -38,7 +38,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .progreso div.actual{background:var(--sendero)}
 .etapa{max-width:880px;margin:0 auto;padding:0 16px 10px;color:var(--brote);font-size:1rem}
 
-main{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+main{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 40px}
 section.pantalla{display:flex;flex-direction:column;gap:24px}
 .eyebrow{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--olivo-texto)}
 .lead{font-size:1.15rem;color:var(--tenue);max-width:62ch}
@@ -169,6 +169,9 @@ th{font-size:1rem;color:var(--tenue);font-weight:700}
 .pagando{display:flex;align-items:center;gap:12px;font-weight:700}
 .spin{width:24px;height:24px;border-radius:50%;border:3px solid var(--brote);border-top-color:var(--bosque);animation:g 0.8s linear infinite}
 @keyframes g{to{transform:rotate(360deg)}}
+.powered{display:flex;align-items:center;justify-content:center;gap:8px;padding-inline:16px;padding-block:16px 28px;border-top:1px solid var(--linea);color:var(--tenue);font-size:1rem}
+.vs-logo{font-weight:700;color:var(--bosque);display:inline-flex;align-items:center}
+.vs-logo img{height:28px;width:auto}
 .pie{font-size:1rem;color:var(--tenue);text-align:center;padding-top:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -188,6 +191,7 @@ th{font-size:1rem;color:var(--tenue);font-weight:700}
 </header>
 
 <main id="app"></main>
+<footer class="powered"><span>powered by</span><span class="vs-logo" id="vsLogo">VerdeSer</span></footer>
 
 <script>
 /* ---------- Datos fijos del producto ---------- */
