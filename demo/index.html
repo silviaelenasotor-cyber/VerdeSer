@@ -28,6 +28,7 @@ h3{font-size:1.2rem}
 p{margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--sendero);outline-offset:2px}
+[tabindex="-1"]:focus{outline:none}
 
 /* Barra superior */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bosque);color:var(--crema)}
@@ -39,7 +40,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .navbtn{background:transparent;border:1px solid rgba(255,253,240,.45);color:var(--crema);border-radius:999px;padding:8px 14px;min-height:44px;cursor:pointer}
 .navbtn:hover{background:rgba(255,253,240,.12)}
 .navbtn:disabled{opacity:.4;cursor:default}
-.progreso{max-width:880px;margin:0 auto;padding:0 16px 12px;display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
+.progreso{max-width:880px;margin:0 auto;padding:0 16px 12px;display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
 .progreso div{height:6px;border-radius:3px;background:rgba(255,253,240,.2)}
 .progreso div.hecho{background:var(--brote)}
 .progreso div.actual{background:var(--sendero)}
@@ -179,6 +180,15 @@ th{font-size:1rem;color:var(--tenue);font-weight:700}
 .powered{display:flex;align-items:center;justify-content:center;gap:8px;padding-inline:16px;padding-block:16px 28px;border-top:1px solid var(--linea);color:var(--tenue);font-size:1rem}
 .vs-logo{font-weight:700;color:var(--bosque);display:inline-flex;align-items:center}
 .vs-logo img{height:22px;width:auto;mix-blend-mode:multiply}
+.paises,.ind-sel{display:flex;gap:8px;flex-wrap:wrap}
+.nube{width:100%;height:auto;display:block}
+.nube .pt{transition:cx .7s cubic-bezier(.2,.8,.2,1),cy .7s cubic-bezier(.2,.8,.2,1),opacity .5s}
+.nube text{font-family:var(--body);fill:var(--tenue);font-size:13px}
+.percentil{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.percentil .num-g{font-family:var(--display);font-size:3.2rem;font-weight:600;line-height:1;color:var(--bosque);font-variant-numeric:tabular-nums}
+.leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:.95rem;color:var(--tenue)}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda i{width:12px;height:12px;border-radius:50%;display:inline-block}
 .pie{font-size:1rem;color:var(--tenue);text-align:center;padding-top:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -202,7 +212,7 @@ th{font-size:1rem;color:var(--tenue);font-weight:700}
 
 <script>
 /* ---------- Datos fijos del producto ---------- */
-const ETAPAS=['Inicio','Plan','Pago','Confirmación','Inscripción','Activación','Encuestas','Resultados','Cierre'];
+const ETAPAS=['Inicio','Plan','Pago','Confirmación','Inscripción','Activación','Encuestas','Resultados','Comparación','Cierre'];
 const PRECIO=350000;
 const MINIMO=5;
 const ESC_FREC=['Nunca','Pocas veces','Casi siempre','Siempre'];
@@ -326,7 +336,7 @@ $('#btnReiniciar').onclick=()=>{limpiarTimers();S=estadoInicial();ir(1)};
 
 function renderBarra(){
   $('#progreso').innerHTML=ETAPAS.map((e,i)=>`<div class="${i+1<S.paso?'hecho':i+1===S.paso?'actual':''}"></div>`).join('');
-  $('#etapa').textContent=`Paso ${S.paso} de 9 · ${ETAPAS[S.paso-1]}`;
+  $('#etapa').textContent=`Paso ${S.paso} de ${ETAPAS.length} · ${ETAPAS[S.paso-1]}`;
   $('#btnAtras').disabled=S.paso===1;
 }
 
@@ -632,7 +642,7 @@ P[8]=()=>{
   <div class="marcas"><span class="tag ejemplo">Datos de ejemplo</span><span class="tag agregado">Resultados agregados; nunca individuales</span></div></div>
   ${filtros}
   ${cuerpo}
-  <div class="accion"><button class="btn" type="button" onclick="ir(9)">Terminar recorrido</button></div>
+  <div class="accion"><button class="btn" type="button" onclick="ir(9)">Comparar con otros colegios</button></div>
 </section>`};
 
 function informe(A,recos){const s=semaforo(A.ISCE);return`
@@ -645,7 +655,37 @@ function informe(A,recos){const s=semaforo(A.ISCE);return`
   <p class="tenue"><span class="marca-txt">Camino</span> · con el acompañamiento de VerdeSer</p>
 </article>`}
 
-P[9]=()=>{const c=S.cierre;
+P[9]=()=>{
+  const A=datosColegio();
+  const cab=`<div class="tab-head"><div class="colegio"><div class="logo">${logoHTML()}</div><div><div class="eyebrow">Comparación con la norma</div><h1>¿Cómo está ${esc(S.colegio.nombre)} frente a otros colegios?</h1></div></div>
+    <div class="marcas"><span class="tag ejemplo">Simulación: norma de ejemplo</span></div></div>`;
+  if(!A)return`<section class="pantalla">${cab}<div class="protegido"><b>Primero necesitamos resultados de su colegio.</b><p class="tenue">Vuelva al paso 7 y simule respuestas.</p></div><div class="accion"><button class="btn" type="button" onclick="ir(10)">Continuar</button></div></section>`;
+  const pais=S.pais||'Colombia',k=S.indN||'ISCE',N=NORMAS[pais];
+  const vals=colegiosNorma(pais,k),mio=A[k],pct=Math.round(vals.filter(v=>v<mio).length/vals.length*100);
+  const dif=mio-N[k];
+  const frase=pct>=50?`Su colegio está mejor que ${pct} de cada 100 colegios de ${pais}.`:`${100-pct} de cada 100 colegios de ${pais} están mejor que el suyo.`;
+  return`<section class="pantalla">${cab}
+  <p class="lead">Cuando Camino tenga más de 100 evaluaciones por país, podrá ver dónde está su colegio frente a colegios similares. Esta pantalla muestra cómo se verá.</p>
+  <div class="card">
+    <div class="campo"><span class="ayuda">País de comparación</span><div class="paises" role="group" aria-label="País">${Object.keys(NORMAS).map(p=>`<button class="filtro" type="button" data-pais="${p}" aria-pressed="${p===pais}">${p}</button>`).join('')}</div></div>
+    <div class="campo"><span class="ayuda">Índice</span><div class="ind-sel" role="group" aria-label="Índice">${Object.keys(NOMBRE_IND).map(i=>`<button class="filtro" type="button" data-ind="${i}" aria-pressed="${i===k}">${i}</button>`).join('')}</div></div>
+  </div>
+  <div class="card">
+    <div class="percentil"><div class="num-g">P${pct}</div><div style="min-width:0;flex:1"><h3>${frase}</h3><p class="tenue">${NOMBRE_IND[k]}: su colegio ${f1(mio)} · norma ${pais} ${f1(N[k])} (${dif>=0?'+':''}${f1(dif)} puntos)</p></div></div>
+    <div id="nube">${nubeSVG(vals,mio,S.colegio.logo)}</div>
+    <div class="leyenda"><span><i style="background:#6B7A3A;opacity:.6"></i>Cada punto es un colegio (${N.n} en ${pais})</span><span><i style="background:var(--sendero)"></i>${esc(S.colegio.nombre)}</span></div>
+  </div>
+  <div class="card">
+    <h3>Su colegio (${f1(mio)}) frente a los 5 países</h3>
+    <div class="tabla-wrap"><table><thead><tr><th>País</th><th>Colegios</th><th>Norma ${k}</th><th>Su posición</th></tr></thead><tbody>
+    ${Object.keys(NORMAS).map(p=>{const v=colegiosNorma(p,k),pc=Math.round(v.filter(x=>x<mio).length/v.length*100);return`<tr><td>${p}</td><td>${NORMAS[p].n}</td><td>${f1(NORMAS[p][k])}</td><td><b>P${pc}</b></td></tr>`}).join('')}
+    </tbody></table></div>
+    <p class="tenue">Datos simulados para mostrar la función. Las normas reales se construirán con las evaluaciones de los colegios que usen Camino.</p>
+  </div>
+  <div class="accion"><button class="btn" type="button" onclick="ir(10)">Terminar recorrido</button></div>
+</section>`};
+
+P[10]=()=>{const c=S.cierre;
 if(S.enviado)return`
 <section class="pantalla">
   <div class="eyebrow">Cierre</div>
@@ -679,6 +719,46 @@ function resumenCierre(){const c=S.cierre;return `Colegio: ${S.colegio.nombre}
 3. ¿Pagaría ${pesos(PRECIO)}?: ${c.pagaria}
 4. Recomendación (0–10): ${c.nps}
 Comentario: ${c.comentario||'—'}`}
+
+/* ---------- Paso 9: comparación con la norma (simulada) ---------- */
+const NORMAS={
+ Colombia:{n:112,ISCE:56,IAA:55,IPSP:49,ICERE:64},
+ 'México':{n:104,ISCE:53,IAA:52,IPSP:47,ICERE:61},
+ Chile:{n:118,ISCE:60,IAA:58,IPSP:55,ICERE:66},
+ 'Perú':{n:101,ISCE:51,IAA:50,IPSP:45,ICERE:59},
+ Ecuador:{n:107,ISCE:54,IAA:54,IPSP:48,ICERE:62}
+};
+const NOMBRE_IND={ISCE:'Índice global (ISCE)',IAA:'Autodeterminación (IAA)',IPSP:'Presión por expectativas (IPSP)',ICERE:'Clima emocional (ICERE)'};
+function colegiosNorma(pais,k){
+  const N=NORMAS[pais],r=rng([...pais].reduce((a,c)=>a*31+c.charCodeAt(0),7)%100000+k.length*13),out=[];
+  for(let i=0;i<N.n;i++)out.push(Math.max(8,Math.min(95,N[k]+gauss(r)*10.5)));
+  return out;
+}
+function datosColegio(){
+  const vis=respuestasActuales().filter(x=>x.est.length>=MINIMO).flatMap(x=>x.est);
+  return vis.length?agregado(vis):null;
+}
+function nubeSVG(vals,mio,logo){
+  const W=window.innerWidth<640?400:800,H=300,L=16,R=16,base=150,rad=W<600?4:5.5,x=v=>L+v/100*(W-L-R);
+  const orden=vals.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v),pos=[],col=[];
+  orden.forEach(o=>{const cx=x(o.v);let k=0,cy;
+    while(true){cy=base+(k===0?0:(k%2?-1:1)*Math.ceil(k/2)*rad*2.1);
+      if(!col.some(p=>Math.abs(p[0]-cx)<rad*2.05&&Math.abs(p[1]-cy)<rad*2.05))break;k++}
+    col.push([cx,cy]);pos[o.i]=[cx,cy]});
+  const bandas=[[0,40,'var(--riesgo)','Riesgo'],[40,60,'var(--alerta)','Alerta'],[60,80,'var(--mod)','Moderado'],[80,100,'var(--ok)','Óptimo']];
+  const mx=x(mio);
+  return `<svg class="nube" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ${vals.length} colegios y la posición de su colegio">
+    <defs><clipPath id="clipLogo"><circle cx="${mx}" cy="46" r="22"/></clipPath></defs>
+    ${bandas.map(([a,b,c,t])=>`<rect x="${x(a)}" y="70" width="${x(b)-x(a)}" height="170" fill="${c}" opacity=".08"/><text x="${(x(a)+x(b))/2}" y="258" text-anchor="middle">${t}</text>`).join('')}
+    <line x1="${L}" y1="240" x2="${W-R}" y2="240" stroke="#B9B79E"/>
+    ${[0,20,40,60,80,100].map(t=>`<text x="${x(t)}" y="282" text-anchor="middle">${t}</text>`).join('')}
+    ${pos.map(([cx,cy])=>`<circle class="pt" cx="${cx}" cy="${cy}" r="${rad}" fill="#6B7A3A" opacity=".55"/>`).join('')}
+    <line x1="${mx}" y1="70" x2="${mx}" y2="240" stroke="var(--sendero)" stroke-width="3" stroke-dasharray="6 5"/>
+    <circle cx="${mx}" cy="46" r="25" fill="#fff" stroke="var(--sendero)" stroke-width="4"/>
+    ${logo?`<image href="${logo}" x="${mx-22}" y="24" width="44" height="44" clip-path="url(#clipLogo)" preserveAspectRatio="xMidYMid meet"/>`:''}
+    <circle cx="${mx}" cy="${base}" r="9" fill="var(--sendero)" stroke="#fff" stroke-width="3"/>
+  </svg>`;
+}
 
 /* ---------- Encuesta de estudiante (vista previa) ---------- */
 function renderEnc(){
@@ -793,6 +873,18 @@ enlazar[8]=()=>{
   const bi=$('#btnInforme');if(bi)bi.onclick=()=>{S.verInforme=!S.verInforme;const y=window.scrollY;render();window.scrollTo({top:y})};
 };
 enlazar[9]=()=>{
+  document.querySelectorAll('[data-pais]').forEach(b=>b.onclick=()=>{S.pais=b.dataset.pais;const y=window.scrollY;render();window.scrollTo({top:y});animarNube()});
+  document.querySelectorAll('[data-ind]').forEach(b=>b.onclick=()=>{S.indN=b.dataset.ind;const y=window.scrollY;render();window.scrollTo({top:y});animarNube()});
+  animarNube();
+};
+function animarNube(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const pts=[...document.querySelectorAll('#nube .pt')];
+  const fin=pts.map(p=>[p.getAttribute('cx'),p.getAttribute('cy')]);
+  pts.forEach(p=>{p.style.transition='none';p.style.cy='-10px';p.style.opacity=0});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>pts.forEach((p,i)=>{p.style.transition='';p.style.transitionDelay=(i*4)+'ms';p.style.cy=fin[i][1]+'px';p.style.opacity=''})));
+}
+enlazar[10]=()=>{
   const f=$('#fCierre');
   if(f)f.onsubmit=ev=>{ev.preventDefault();const v=n=>(document.querySelector(`input[name=${n}]:checked`)||{}).value||'';
     S.cierre={entendio:v('entendio'),sirve:v('sirve'),pagaria:v('pagaria'),nps:v('nps'),comentario:$('#coment').value.trim()};

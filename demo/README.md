@@ -1,6 +1,6 @@
 # Camino · Demo para rectores
 
-Demo navegable de 9 pantallas (inicio → plan → pago simulado → confirmación → inscripción → activación → envío de encuestas → resultados → cierre), según el *Brief MVP — Demo de compra y activación para rectores* y el *Mini Brand Book de CAMINO*.
+Demo navegable de 10 pantallas (inicio → plan → pago simulado → confirmación → inscripción → activación → envío de encuestas → resultados → comparación con norma simulada → cierre), según el *Brief MVP — Demo de compra y activación para rectores* y el *Mini Brand Book de CAMINO*.
 
 - `index.html`: versión que se abre directamente en el navegador.
 - `camino-demo.html`: la misma página, en el formato con que se publica como Artifact.
