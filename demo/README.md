@@ -7,4 +7,4 @@ Demo navegable de 9 pantallas (inicio → plan → pago simulado → confirmaci�
 
 Todo corre en el navegador: no cobra, no guarda datos y usa respuestas inventadas. El cálculo de índices sigue el PRD v2.0 (ISCE = 35 % IAA + 35 % IPSP + 30 % ICERE; mínimo de 5 respuestas por grupo).
 
-Pendientes marcados en la página: `[Nombre estudiante]`, `[CUPO DE ESTUDIANTES O GRUPOS]`, `[LÍNEA DE AYUDA]`, texto legal y carta a padres (revisar con asesor).
+Pendientes marcados en la página: `[CUPO DE ESTUDIANTES O GRUPOS]`, `[LÍNEA DE AYUDA]`, texto legal y carta a padres (revisar con asesor).
