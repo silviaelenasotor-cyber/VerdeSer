@@ -73,6 +73,8 @@ section.pantalla{display:flex;flex-direction:column;gap:24px}
 .hero .eyebrow{color:var(--brote)}
 .hero .lead{color:#E6E9D6}
 .hero svg.fondo{position:absolute;right:-80px;bottom:-80px;opacity:.08;pointer-events:none}
+.marca-txt{font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+.hero .marca-txt{color:var(--brote);font-size:1.1em}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{background:var(--brote);color:var(--bosque);border-radius:999px;padding:4px 12px;font-weight:500}
 
@@ -333,7 +335,7 @@ P[1]=()=>`
     <svg class="fondo" viewBox="0 0 120 120" width="340" height="340" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="#FFFDF0" stroke-width="3"/><path d="M32 98 C 32 70, 88 74, 88 50 C 88 36, 76 30, 64 32" stroke="#FFFDF0" stroke-width="12" fill="none" stroke-linecap="round"/></svg>
     <div class="eyebrow">Radiografía de la Mente Infantil</div>
     <h1>¿Sabe lo que sus estudiantes no le cuentan a nadie en el colegio?</h1>
-    <p class="lead">Nosotros sí, porque somos estudiantes. La presión por las notas, las clases que no nos conectan, la ansiedad que termina en dolor de estómago. Lo vivimos, y por eso creamos Camino: una encuesta anónima de 10 minutos que le muestra lo que sienten sus estudiantes y qué puede hacer su colegio.</p>
+    <p class="lead">Nosotros sí, porque somos estudiantes. La presión por las notas, las clases que no nos conectan, la ansiedad que termina en dolor de estómago. Lo vivimos, y por eso creamos <span class="marca-txt">Camino</span>: una encuesta anónima de 10 minutos que le muestra lo que sienten sus estudiantes y qué puede hacer su colegio.</p>
     <div class="chips"><span class="chip">Anónima</span><span class="chip">6° a 11°</span><span class="chip">Resultados por grupo</span></div>
   </div>
 
@@ -633,7 +635,7 @@ function informe(A,recos){const s=semaforo(A.ISCE);return`
   <p><b>Índices:</b> Autodeterminación ${f1(A.IAA)} · Presión por expectativas ${f1(A.IPSP)} · Clima emocional ${f1(A.ICERE)}.</p>
   <div><b>Recomendaciones:</b><ul>${recos.length?recos.map(r=>`<li>${r.sol}</li>`).join(''):'<li>Mantener y consolidar las prácticas actuales.</li>'}</ul></div>
   <p class="tenue">Datos de ejemplo. Resultados agregados; nunca individuales. En la versión real, este informe se descarga en PDF.</p>
-  <p class="tenue">Camino · con el acompañamiento de VerdeSer</p>
+  <p class="tenue"><span class="marca-txt">Camino</span> · con el acompañamiento de VerdeSer</p>
 </article>`}
 
 P[9]=()=>{const c=S.cierre;
