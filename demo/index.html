@@ -229,9 +229,9 @@ const PREG=[
  ['P18','IART','a','c','Jamás me he distraído ni un solo segundo durante una clase en el colegio.']
 ];
 const INDICES={
- IAA:{nombre:'Autodeterminación académica',diag:'Alta regulación externa y estudio por evitación de castigo.',sol:'Taller docente: “Motivación sin filtros: conectando el aprendizaje real”.'},
- IPSP:{nombre:'Presión por expectativas (perfeccionismo)',diag:'Presión destructiva por notas y prevalencia de “resultado vacío”.',sol:'Escuela para padres: “Desmontar el escudo: cómo acompañar sin presión”.'},
- ICERE:{nombre:'Clima emocional y riesgo escolar',diag:'Síntomas psicosomáticos de estrés y desconexión con docentes.',sol:'Programa institucional: “Malla preventiva de clima escolar y bienestar”.'}
+ IAA:{nombre:'Autodeterminación académica',sigla:'Índice de Autodeterminación Académica',que:'¿Los estudiantes aprenden por interés propio o solo por la nota y por evitar castigos? Un puntaje alto indica curiosidad y gusto por entender.',diag:'Alta regulación externa y estudio por evitación de castigo.',sol:'Taller docente: “Motivación sin filtros: conectando el aprendizaje real”.'},
+ IPSP:{nombre:'Presión por expectativas (perfeccionismo)',sigla:'Índice de Perfeccionismo Socialmente Prescrito',que:'¿Cuánta presión sienten por cumplir lo que esperan sus padres? Un puntaje alto indica poca presión dañina; uno bajo, estudio para complacer y notas sin aprendizaje real.',diag:'Presión destructiva por notas y prevalencia de “resultado vacío”.',sol:'Escuela para padres: “Desmontar el escudo: cómo acompañar sin presión”.'},
+ ICERE:{nombre:'Clima emocional y riesgo escolar',sigla:'Índice de Clima Emocional y Riesgo Escolar',que:'¿Se sienten seguros y conectados en el colegio? Mide aburrimiento en clase, síntomas físicos de estrés, acoso y si tienen un adulto de confianza. Un puntaje alto indica un entorno seguro.',diag:'Síntomas psicosomáticos de estrés y desconexión con docentes.',sol:'Programa institucional: “Malla preventiva de clima escolar y bienestar”.'}
 };
 const RECO_IART={diag:'Sesgo de deseabilidad social alto: parte de las respuestas parecen idealizadas.',sol:'Consultoría directiva: “Estrategia de apertura y confianza institucional”.'};
 
@@ -604,7 +604,8 @@ P[8]=()=>{
         <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
           <div class="eyebrow">Índice global de bienestar (ISCE)</div>
           <div class="sem" style="font-size:1.3rem"><i style="background:${s.c}"></i>${s.t}</div>
-          <p class="tenue">${A.n} respuestas · autenticidad ${f1(A.autent)} %</p>
+          <p><b>ISCE</b> = Índice de Salud y Conexión Emocional Educativa. Resume en un número de 0 a 100 cómo están emocionalmente sus estudiantes frente al estudio. Más alto es mejor.</p>
+          <p class="tenue">${A.n} respuestas · autenticidad ${f1(A.autent)} %: porcentaje de encuestas sin respuestas idealizadas (lo detectan 3 preguntas de control).</p>
         </div>
       </div>
     </div>
@@ -612,9 +613,9 @@ P[8]=()=>{
       ${['IAA','IPSP','ICERE'].map(k=>{const v=A[k],sk=semaforo(v);return`<div class="card indice">
         <div class="eyebrow">${k}</div><h3>${INDICES[k].nombre}</h3>
         <div class="fila" style="justify-content:space-between"><span class="valor">${f1(v)}</span><span class="sem"><i style="background:${sk.c}"></i>${sk.t}</span></div>
-        <div class="barra-i"><div style="width:${v}%;background:${sk.c}"></div></div></div>`}).join('')}
+        <div class="barra-i"><div style="width:${v}%;background:${sk.c}"></div></div><p>${INDICES[k].que}</p><p class="tenue">${k} = ${INDICES[k].sigla}</p></div>`}).join('')}
     </div>
-    <p class="formula">Cálculo: 35 % × ${f1(A.IAA)} + 35 % × ${f1(A.IPSP)} + 30 % × ${f1(A.ICERE)} = ${f1(A.ISCE)}</p>
+    <p class="formula">Los 4 índices van de 0 a 100 y más alto siempre es mejor. Semáforo: 80–100 óptimo · 60–79,9 moderado · 40–59,9 alerta crítica · 0–39,9 riesgo institucional.<br>Cálculo del índice global: 35 % × ${f1(A.IAA)} + 35 % × ${f1(A.IPSP)} + 30 % × ${f1(A.ICERE)} = ${f1(A.ISCE)}</p>
     <div class="card">
       <h2>Qué hacer</h2>
       ${recos.length?recos.map(r=>`<div class="reco"><b>${r.t}</b><span class="tenue">${r.diag}</span><span>→ ${r.sol}</span></div>`).join(''):'<p>Ningún índice está bajo 50. Recomendación: mantener y consolidar las prácticas actuales.</p>'}
