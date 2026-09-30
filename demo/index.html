@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Camino · Demo para rectores</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=DM+Sans:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: una columna móvil primero; barra fija arriba (aviso + progreso), una pantalla visible a la vez, una acción principal al final. */
+:root{
+  --bosque:#2F3A22; --olivo:#6B7A3A; --olivo-texto:#56632C; --brote:#CBE29A; --crema:#FFFDF0; --sendero:#C8733A;
+  --papel:#FFFFFF; --linea:#E4E2CC; --tenue:#4E5440; --suave:#F4F3E2;
+  --ok:#10B981; --mod:#0284C7; --alerta:#F59E0B; --riesgo:#EF4444;
+  --display:'Fraunces',Georgia,'Times New Roman',serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--crema);color:var(--bosque);font-family:var(--body);font-size:1rem;line-height:1.55}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(1.9rem,6vw,2.8rem)}
+h2{font-size:clamp(1.5rem,4.5vw,2rem)}
+h3{font-size:1.2rem}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sendero);outline-offset:2px}
+
+/* Barra superior */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bosque);color:var(--crema)}
+.aviso{background:var(--sendero);color:var(--bosque);font-weight:700;text-align:center;padding:6px 16px;font-size:1rem}
+.barra{max-width:880px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:1.35rem;margin-right:auto}
+.marca svg{flex:none}
+.acomp{font-family:var(--body);font-weight:400;font-size:1rem;color:var(--brote)}
+.navbtn{background:transparent;border:1px solid rgba(255,253,240,.45);color:var(--crema);border-radius:999px;padding:8px 14px;min-height:44px;cursor:pointer}
+.navbtn:hover{background:rgba(255,253,240,.12)}
+.navbtn:disabled{opacity:.4;cursor:default}
+.progreso{max-width:880px;margin:0 auto;padding:0 16px 12px;display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
+.progreso div{height:6px;border-radius:3px;background:rgba(255,253,240,.2)}
+.progreso div.hecho{background:var(--brote)}
+.progreso div.actual{background:var(--sendero)}
+.etapa{max-width:880px;margin:0 auto;padding:0 16px 10px;color:var(--brote);font-size:1rem}
+
+main{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+section.pantalla{display:flex;flex-direction:column;gap:24px}
+.eyebrow{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--olivo-texto)}
+.lead{font-size:1.15rem;color:var(--tenue);max-width:62ch}
+.tenue{color:var(--tenue)}
+
+.card{background:var(--papel);border:1px solid var(--linea);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.fila{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 24px;border-radius:999px;border:0;background:var(--bosque);color:var(--crema);font-weight:700;font-size:1.05rem;cursor:pointer;text-align:center}
+.btn:hover{background:#3E4B2E}
+.btn.sec{background:transparent;color:var(--bosque);border:2px solid var(--bosque)}
+.btn.sec:hover{background:var(--suave)}
+.btn.chico{min-height:44px;padding:8px 16px;font-size:1rem}
+.btn:disabled{opacity:.5;cursor:default}
+.accion{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+@media (min-width:600px){.accion{flex-direction:row;align-items:center}}
+.enlace{background:none;border:0;padding:0;color:var(--olivo-texto);text-decoration:underline;cursor:pointer;font-size:1rem;min-height:44px}
+
+.pasos{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));counter-reset:p}
+.paso{display:flex;gap:12px;align-items:flex-start}
+.num{flex:none;width:36px;height:36px;border-radius:50%;background:var(--brote);color:var(--bosque);font-weight:700;display:grid;place-items:center}
+
+.hero{background:var(--bosque);color:var(--crema);border-radius:20px;padding:28px 22px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
+.hero .eyebrow{color:var(--brote)}
+.hero .lead{color:#E6E9D6}
+.hero svg.fondo{position:absolute;right:-80px;bottom:-80px;opacity:.08;pointer-events:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--brote);color:var(--bosque);border-radius:999px;padding:4px 12px;font-weight:500}
+
+.precio{font-family:var(--display);font-size:2.4rem;font-weight:600;font-variant-numeric:tabular-nums}
+ul.check{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.check li{display:flex;gap:10px;align-items:flex-start}
+ul.check li::before{content:"";flex:none;width:18px;height:18px;margin-top:4px;border-radius:50%;background:var(--brote);box-shadow:inset 0 0 0 5px var(--olivo)}
+
+label{font-weight:700;display:block}
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ayuda{font-weight:400;color:var(--tenue);font-size:1rem}
+input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],select,textarea{width:100%;min-height:48px;padding:10px 12px;border:1.5px solid #B9B79E;border-radius:10px;background:var(--papel)}
+textarea{min-height:96px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--olivo);outline:none;box-shadow:0 0 0 3px var(--brote)}
+.error{color:#9A2B2B;font-weight:500}
+.opciones{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+.opcion{display:flex;gap:10px;align-items:center;border:1.5px solid #B9B79E;border-radius:12px;padding:12px 14px;background:var(--papel);cursor:pointer;min-height:52px;font-weight:500}
+.opcion:has(input:checked){border-color:var(--bosque);background:var(--suave);box-shadow:inset 0 0 0 1px var(--bosque)}
+.opcion input{width:20px;height:20px;accent-color:var(--bosque);flex:none}
+.logo-prev{width:88px;height:88px;border-radius:14px;border:1.5px dashed #B9B79E;display:grid;place-items:center;background:var(--papel);overflow:hidden;flex:none;color:var(--tenue);text-align:center;font-size:.9rem}
+.logo-prev img{width:100%;height:100%;object-fit:contain}
+.subpasos{display:flex;gap:8px;flex-wrap:wrap}
+.subpasos span{padding:6px 12px;border-radius:999px;background:var(--suave);color:var(--tenue)}
+.subpasos span.on{background:var(--bosque);color:var(--crema)}
+.grupo-fila{display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;align-items:end}
+.quitar{min-height:48px;border-radius:10px;border:1.5px solid #B9B79E;background:var(--papel);cursor:pointer}
+
+.recibo{background:var(--papel);border:1px solid var(--linea);border-radius:16px;padding:20px;display:grid;gap:8px}
+.recibo .r{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--linea);padding-bottom:8px;font-variant-numeric:tabular-nums}
+.recibo .r:last-child{border:0}
+.sello{display:inline-block;border:2px solid var(--olivo);color:var(--olivo-texto);border-radius:8px;padding:2px 10px;font-weight:700;transform:rotate(-3deg);width:max-content}
+
+.colegio{display:flex;gap:14px;align-items:center}
+.colegio .logo{width:64px;height:64px;border-radius:12px;background:var(--papel);border:1px solid var(--linea);overflow:hidden;flex:none}
+.colegio .logo img{width:100%;height:100%;object-fit:contain}
+.lista-ver{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.lista-ver li{display:flex;gap:12px;align-items:center;color:var(--tenue);transition:color .3s}
+.lista-ver li .caja{width:26px;height:26px;border-radius:8px;border:2px solid #B9B79E;display:grid;place-items:center;flex:none;transition:all .3s}
+.lista-ver li.ok{color:var(--bosque)}
+.lista-ver li.ok .caja{background:var(--olivo);border-color:var(--olivo)}
+.lista-ver li.ok .caja::after{content:"";width:10px;height:6px;border-left:3px solid #fff;border-bottom:3px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.activo{display:inline-flex;align-items:center;gap:8px;background:var(--brote);color:var(--bosque);border-radius:999px;padding:6px 14px;font-weight:700}
+.activo::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--olivo)}
+
+.qr{width:136px;height:136px;background:#fff;padding:4px;border-radius:8px;border:1px solid var(--linea);display:grid;place-items:center;text-align:center;font-size:.85rem;flex:none}
+.qr img,.qr canvas{width:128px!important;height:128px!important}
+.link-box{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--suave);border-radius:8px;padding:8px 10px;word-break:break-all;font-size:.95rem}
+.contador{font-family:var(--display);font-size:2rem;font-weight:600;font-variant-numeric:tabular-nums}
+.barra-meta{height:10px;border-radius:5px;background:var(--suave);overflow:hidden}
+.barra-meta div{height:100%;background:var(--olivo);transition:width .5s}
+.pre{white-space:pre-wrap;background:var(--suave);border-radius:10px;padding:14px;font-size:1rem}
+details summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+
+/* Tablero */
+.tab-head{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.marcas{display:flex;gap:8px;flex-wrap:wrap}
+.tag{border-radius:999px;padding:4px 12px;font-weight:700;font-size:1rem}
+.tag.ejemplo{background:var(--sendero);color:var(--bosque)}
+.tag.agregado{background:var(--suave);color:var(--bosque);border:1px solid var(--linea)}
+.filtros{display:flex;gap:8px;flex-wrap:wrap}
+.filtro{min-height:44px;padding:8px 16px;border-radius:999px;border:1.5px solid var(--bosque);background:transparent;cursor:pointer;font-weight:500}
+.filtro[aria-pressed=true]{background:var(--bosque);color:var(--crema)}
+.isce{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.anillo{position:relative;width:150px;height:150px;flex:none}
+.anillo .v{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.1}
+.anillo .v b{font-family:var(--display);font-size:2.4rem;font-variant-numeric:tabular-nums}
+.sem{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.sem i{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.indice .barra-i{height:12px;border-radius:6px;background:var(--suave);overflow:hidden}
+.indice .barra-i div{height:100%;border-radius:6px}
+.indice .valor{font-family:var(--display);font-size:1.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.banner{border-radius:12px;padding:14px 16px;background:#FEF3C7;border:1.5px solid var(--alerta);color:#5C3A00;font-weight:500}
+.protegido{border-radius:12px;padding:14px 16px;background:var(--suave);border:1.5px dashed #B9B79E}
+.reco{border-top:1px solid var(--linea);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+.reco:first-of-type{border-top:0;padding-top:0}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--linea)}
+th{font-size:1rem;color:var(--tenue);font-weight:700}
+.tabla-wrap{overflow-x:auto}
+.formula{font-size:1rem;color:var(--tenue)}
+.informe{background:#fff;border:1px solid var(--linea);border-radius:6px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 24px rgba(47,58,34,.08)}
+
+/* Encuesta de estudiante (vista previa) */
+.telefono{max-width:400px;width:100%;margin:0 auto;background:var(--crema);border:10px solid var(--bosque);border-radius:32px;padding:20px 16px;display:flex;flex-direction:column;gap:16px;min-height:540px}
+.opt-escala{display:flex;flex-direction:column;gap:8px}
+.opt-escala button{min-height:52px;border-radius:12px;border:1.5px solid #B9B79E;background:var(--papel);text-align:left;padding:10px 14px;cursor:pointer;font-weight:500}
+.opt-escala button[aria-pressed=true]{background:var(--bosque);color:var(--crema);border-color:var(--bosque)}
+.mini-prog{height:6px;border-radius:3px;background:var(--suave);overflow:hidden}
+.mini-prog div{height:100%;background:var(--olivo)}
+
+.estrellas{display:flex;gap:6px;flex-wrap:wrap}
+.estrellas label{font-weight:500}
+.escala10{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px}
+.escala10 label{display:grid;place-items:center;min-height:44px;border:1.5px solid #B9B79E;border-radius:8px;background:var(--papel);cursor:pointer;font-weight:500}
+.escala10 label:has(input:checked){background:var(--bosque);color:var(--crema);border-color:var(--bosque)}
+.escala10 input{position:absolute;opacity:0;pointer-events:none}
+@media (max-width:420px){.escala10{grid-template-columns:repeat(6,minmax(0,1fr))}}
+
+.pagando{display:flex;align-items:center;gap:12px;font-weight:700}
+.spin{width:24px;height:24px;border-radius:50%;border:3px solid var(--brote);border-top-color:var(--bosque);animation:g 0.8s linear infinite}
+@keyframes g{to{transform:rotate(360deg)}}
+.pie{font-size:1rem;color:var(--tenue);text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="aviso" role="note">Demostración: no se cobra ni se guardan datos reales</div>
+  <div class="barra">
+    <div class="marca">
+      <svg viewBox="0 0 120 120" width="34" height="34" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#6B7A3A"/><path d="M32 98 C 32 70, 88 74, 88 50 C 88 36, 76 30, 64 32" stroke="#CBE29A" stroke-width="13" fill="none" stroke-linecap="round"/><path d="M64 32 C 60 20, 68 12, 82 12 C 82 24, 76 32, 64 32 Z" fill="#C8733A"/></svg>
+      Camino
+    </div>
+    <button class="navbtn" id="btnAtras" type="button">← Atrás</button>
+    <button class="navbtn" id="btnReiniciar" type="button">Reiniciar demo</button>
+  </div>
+  <div class="progreso" id="progreso" aria-hidden="true"></div>
+  <div class="etapa" id="etapa" aria-live="polite"></div>
+</header>
+
+<main id="app"></main>
+
+<script>
+/* ---------- Datos fijos del producto ---------- */
+const ETAPAS=['Inicio','Plan','Pago','Confirmación','Inscripción','Activación','Encuestas','Resultados','Cierre'];
+const PRECIO=350000;
+const MINIMO=5;
+const ESC_FREC=['Nunca','Pocas veces','Casi siempre','Siempre'];
+const ESC_ACU=['Totalmente en desacuerdo','En desacuerdo','De acuerdo','Totalmente de acuerdo'];
+// Banco PRD v2.0 · P01–P15 en 3 índices, P16–P18 control (IART)
+const PREG=[
+ ['P01','IAA','f','d','¿Con qué frecuencia investigas o buscas información sobre un tema del colegio por tu propia cuenta, sin que ningún profesor te lo haya pedido?'],
+ ['P02','IAA','a','i','Tu meta principal al estudiar para un examen o entregar una tarea es sacar una nota que mantenga a tus padres tranquilos para evitar problemas en casa.'],
+ ['P03','IAA','a','i','Si sabes que una materia o tema no tendrá nota ni examen, pierdes casi por completo el interés por aprender sus contenidos.'],
+ ['P04','IAA','a','d','Sientes satisfacción u orgullo personal cuando logras entender un tema difícil, independientemente de la nota final que te pongan.'],
+ ['P05','IAA','a','i','Estudias y haces tus tareas principalmente para evitar que tus padres o profesores se decepcionen de ti o te regañen.'],
+ ['P06','IPSP','f','i','¿Qué tan seguido te sientes preocupado/a o estresado/a por la reacción de tus padres (regaños, castigos o perder privilegios) si sacas una nota baja?'],
+ ['P07','IPSP','a','i','Te sientes aliviado/a y satisfecho/a cuando sacas la nota máxima en una evaluación, incluso si eres consciente de que no aprendiste ni entendiste el tema.'],
+ ['P08','IPSP','a','i','Sientes que tus padres te exigen notas o calificaciones muy altas que te resultan difíciles o estresantes de alcanzar.'],
+ ['P09','IPSP','a','i','La exigencia o presión que sientes en tu hogar te lleva a estudiar únicamente para complacer las expectativas de tus padres.'],
+ ['P10','IPSP','a','i','Prefieres memorizar rápidamente la información solo para pasar el examen y luego olvidarla, en lugar de tomarte el tiempo de entenderla bien.'],
+ ['P11','ICERE','f','i','Durante una semana normal de colegio, ¿con qué frecuencia te sientes aburrido/a o desconectado/a de lo que explican los profesores en clase?'],
+ ['P12','ICERE','f','i','Has sentido dolor de estómago, angustia o dolor de cabeza al pensar en ir al colegio o por la carga de tareas y exámenes.'],
+ ['P13','ICERE','a','d','En tu colegio sientes que hay al menos un adulto (profesor, psicólogo, coordinador) en quien confías y a quien podrías acudir si tienes un problema grave.'],
+ ['P14','ICERE','f','i','En el colegio has presenciado o vivido situaciones de burlas, aislamiento o agresiones entre compañeros que te hacen sentir inseguro/a.'],
+ ['P15','ICERE','a','d','Sientes que lo que aprendes en las clases se relaciona de verdad con tu vida cotidiana y con lo que te interesa sobre el mundo actual.'],
+ ['P16','IART','a','c','Nunca en mi vida me he sentido molesto/a ni con rabia hacia un compañero o profesor del colegio.'],
+ ['P17','IART','a','c','Siempre hago absolutamente todas mis tareas con total alegría y entusiasmo, sin importar la materia ni la hora.'],
+ ['P18','IART','a','c','Jamás me he distraído ni un solo segundo durante una clase en el colegio.']
+];
+const INDICES={
+ IAA:{nombre:'Autodeterminación académica',diag:'Alta regulación externa y estudio por evitación de castigo.',sol:'Taller docente: “Motivación sin filtros: conectando el aprendizaje real”.'},
+ IPSP:{nombre:'Presión por expectativas (perfeccionismo)',diag:'Presión destructiva por notas y prevalencia de “resultado vacío”.',sol:'Escuela para padres: “Desmontar el escudo: cómo acompañar sin presión”.'},
+ ICERE:{nombre:'Clima emocional y riesgo escolar',diag:'Síntomas psicosomáticos de estrés y desconexión con docentes.',sol:'Programa institucional: “Malla preventiva de clima escolar y bienestar”.'}
+};
+const RECO_IART={diag:'Sesgo de deseabilidad social alto: parte de las respuestas parecen idealizadas.',sol:'Consultoría directiva: “Estrategia de apertura y confianza institucional”.'};
+
+/* ---------- Estado en memoria ---------- */
+function estadoInicial(){
+  const hoy=new Date(), d1=new Date(hoy), d2=new Date(hoy);
+  d1.setDate(hoy.getDate()+7); d2.setDate(hoy.getDate()+21);
+  return {paso:1,sub:1,errores:{},pagando:false,
+    comprador:{nombre:'',cargo:'',correo:''},medio:'pse',recibo:null,
+    colegio:{nombre:'',logo:'',ciudad:'',nit:'',cal:'A'},
+    resp:{nombre:'',correo:'',cel:'',orientador:''},
+    grupos:[{nombre:'',n:''}],fechas:{desde:iso(d1),hasta:iso(d2)},
+    autoriza:false,consent:'',
+    sim:0,filtro:'todos',verInforme:false,
+    enc:null,cierre:{entendio:'',sirve:'',pagaria:'',nps:'',comentario:''},enviado:false};
+}
+function iso(d){return d.toISOString().slice(0,10)}
+let S=estadoInicial();
+let timers=[];
+function limpiarTimers(){timers.forEach(clearTimeout);timers=[]}
+
+/* ---------- Utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pesos=n=>'$'+n.toLocaleString('es-CO')+' COP';
+const fecha=s=>{if(!s)return'';const[y,m,d]=s.split('-');return new Date(+y,+m-1,+d).toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})};
+function slug(t){return String(t).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/°/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function gruposValidos(){return S.grupos.filter(g=>g.nombre.trim()&&+g.n>0)}
+function copiar(texto,btn){
+  const ok=()=>{const o=btn.textContent;btn.textContent='Copiado';setTimeout(()=>btn.textContent=o,1500)};
+  try{navigator.clipboard.writeText(texto).then(ok,()=>fallback())}catch(e){fallback()}
+  function fallback(){const t=document.createElement('textarea');t.value=texto;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok()}catch(e){btn.textContent='Selecciona y copia'}t.remove()}
+}
+function logoHTML(){return S.colegio.logo?`<img src="${S.colegio.logo}" alt="Logo de ${esc(S.colegio.nombre)}">`:''}
+function codigo(){return (slug(S.colegio.nombre).split('-').map(w=>w[0]).join('').toUpperCase().slice(0,4)||'COL')}
+function enlaceGrupo(g){return `https://camino.demo/e/${codigo()}-${slug(g.nombre)}`}
+
+/* ---------- Motor de cálculo (igual al PRD v2.0) ---------- */
+function V(r,pol){return pol==='d'?(r-1)/3*100:(4-r)/3*100}
+function metricas(resp){ // resp: array de 18 valores 1–4
+  const acc={IAA:[],IPSP:[],ICERE:[]};let fake=0;
+  PREG.forEach((p,i)=>{if(p[3]==='c'){if(resp[i]===4)fake++}else acc[p[1]].push(V(resp[i],p[3]))});
+  const m=k=>acc[k].reduce((a,b)=>a+b,0)/acc[k].length;
+  const IAA=m('IAA'),IPSP=m('IPSP'),ICERE=m('ICERE');
+  return {IAA,IPSP,ICERE,ISCE:.35*IAA+.35*IPSP+.30*ICERE,flag:fake>=2};
+}
+function semaforo(v){
+  if(v>=80)return{t:'Óptimo',c:'var(--ok)'};
+  if(v>=60)return{t:'Moderado',c:'var(--mod)'};
+  if(v>=40)return{t:'Alerta crítica',c:'var(--alerta)'};
+  return{t:'Riesgo institucional',c:'var(--riesgo)'};
+}
+// Generador con semilla: mismas respuestas ficticias en cada demo
+function rng(seed){return()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}}
+function gauss(r){return (r()+r()+r()-1.5)/0.5}
+const SESGOS=[{IAA:.49,IPSP:.40,ICERE:.66},{IAA:.58,IPSP:.50,ICERE:.54},{IAA:.64,IPSP:.57,ICERE:.71},{IAA:.44,IPSP:.47,ICERE:.60}];
+function meta(g,i){return Math.min(+g.n,Math.max(1,Math.round(+g.n*(i%2?0.8:0.867))))}
+function estudiantesGrupo(g,i){
+  const r=rng(1000+i*97),b=SESGOS[i%SESGOS.length],tot=meta(g,i),out=[];
+  for(let s=0;s<tot;s++){
+    const w={IAA:b.IAA+gauss(r)*.12,IPSP:b.IPSP+gauss(r)*.12,ICERE:b.ICERE+gauss(r)*.12};
+    const resp=PREG.map(p=>{
+      if(p[3]==='c')return r()<.14?4:1+Math.floor(r()*3);
+      const nivel=Math.max(0,Math.min(3,Math.round((w[p[1]]+gauss(r)*.18)*3)));
+      return p[3]==='d'?nivel+1:4-nivel;
+    });
+    out.push(metricas(resp));
+  }
+  return out;
+}
+function respuestasActuales(){
+  return gruposValidos().map((g,i)=>{
+    const todos=estudiantesGrupo(g,i);
+    let n=0;
+    if(S.sim===1)n=i===0?todos.length:Math.min(3,todos.length);
+    if(S.sim>=2)n=todos.length;
+    return {g,meta:meta(g,i),est:todos.slice(0,n)};
+  });
+}
+function agregado(est){
+  const n=est.length,prom=k=>est.reduce((a,e)=>a+e[k],0)/n;
+  const IAA=prom('IAA'),IPSP=prom('IPSP'),ICERE=prom('ICERE');
+  const flags=est.filter(e=>e.flag).length;
+  return {n,IAA,IPSP,ICERE,ISCE:.35*IAA+.35*IPSP+.30*ICERE,autent:100-flags/n*100,flagPct:flags/n*100};
+}
+const f1=v=>v.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+/* ---------- Navegación ---------- */
+function ir(n){limpiarTimers();S.paso=n;S.errores={};render();window.scrollTo({top:0});const h=$('#app h1, #app h2');if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:true})}}
+$('#btnAtras').onclick=()=>{if(S.paso===5&&S.sub>1){S.sub--;render();return}if(S.paso>1)ir(S.paso-1)};
+$('#btnReiniciar').onclick=()=>{limpiarTimers();S=estadoInicial();ir(1)};
+
+function renderBarra(){
+  $('#progreso').innerHTML=ETAPAS.map((e,i)=>`<div class="${i+1<S.paso?'hecho':i+1===S.paso?'actual':''}"></div>`).join('');
+  $('#etapa').textContent=`Paso ${S.paso} de 9 · ${ETAPAS[S.paso-1]}`;
+  $('#btnAtras').disabled=S.paso===1;
+}
+
+/* ---------- Pantallas ---------- */
+const P={};
+
+P[1]=()=>`
+<section class="pantalla">
+  <div class="hero">
+    <svg class="fondo" viewBox="0 0 120 120" width="340" height="340" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="#FFFDF0" stroke-width="3"/><path d="M32 98 C 32 70, 88 74, 88 50 C 88 36, 76 30, 64 32" stroke="#FFFDF0" stroke-width="12" fill="none" stroke-linecap="round"/></svg>
+    <div class="eyebrow">Radiografía de la Mente Infantil</div>
+    <h1>Sus estudiantes sienten más de lo que dicen en voz alta.</h1>
+    <p class="lead">Presión por las notas, desconexión en clase, ansiedad que se vuelve dolor de estómago. Camino lo mide con una encuesta anónima de 10 minutos y le dice al colegio qué hacer.</p>
+    <div class="chips"><span class="chip">Anónima</span><span class="chip">6° a 11°</span><span class="chip">Resultados por grupo</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Cómo funciona</h2>
+    <div class="pasos">
+      <div class="paso"><span class="num">1</span><p><b>Inscribe tu colegio</b> y los grupos que participan.</p></div>
+      <div class="paso"><span class="num">2</span><p><b>Comparte un enlace</b> por grupo. Los estudiantes responden desde el celular, sin cuenta.</p></div>
+      <div class="paso"><span class="num">3</span><p><b>Recibe el tablero</b> con 3 índices, un semáforo y recomendaciones concretas.</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="eyebrow">Quiénes somos</div>
+      <h3>Un emprendimiento de estudiantes</h3>
+      <p>Somos estudiantes que vimos este problema en nuestro propio colegio y creamos una herramienta para medirlo.</p>
+      <ul class="check"><li>[Nombre estudiante] · [rol]</li><li>[Nombre estudiante] · [rol]</li><li>[Nombre estudiante] · [rol]</li></ul>
+      <p class="tenue">Con el acompañamiento de VerdeSer · Emprendimiento Escolar con Propósito.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Ejemplo de resultado</div>
+      <h3>Grupo 9°A · 26 respuestas</h3>
+      <div class="sem"><i style="background:var(--alerta)"></i>Índice global 52,8 · Alerta crítica</div>
+      <p class="tenue">La presión por expectativas familiares está baja (41). Recomendación: escuela para padres “Desmontar el escudo”.</p>
+      <span class="tag ejemplo" style="width:max-content">Datos de ejemplo</span>
+    </div>
+  </div>
+
+  <div class="accion"><button class="btn" type="button" onclick="ir(2)">Quiero la Radiografía para mi colegio</button></div>
+</section>`;
+
+P[2]=()=>`
+<section class="pantalla">
+  <div class="eyebrow">Plan</div>
+  <h1>Una medición completa para su colegio</h1>
+  <div class="card">
+    <div class="fila" style="justify-content:space-between">
+      <h2>Plan Radiografía</h2>
+      <div class="precio">${pesos(PRECIO)}</div>
+    </div>
+    <p class="tenue">Precio de referencia por medición. Incluye: [CUPO DE ESTUDIANTES O GRUPOS].</p>
+    <ul class="check">
+      <li><span><b>Encuesta anónima</b> de 18 preguntas, con enlace y QR por grupo.</span></li>
+      <li><span><b>Tablero en línea</b> con el índice global, 3 índices y semáforo, filtrable por grupo.</span></li>
+      <li><span><b>Informe</b> con el logo de su colegio, listo para compartir con su equipo.</span></li>
+      <li><span><b>Recomendaciones</b> concretas para cada índice que salga bajo.</span></li>
+    </ul>
+  </div>
+  <div class="accion"><button class="btn" type="button" onclick="ir(3)">Comprar</button></div>
+</section>`;
+
+P[3]=()=>{const e=S.errores;return`
+<section class="pantalla">
+  <div class="eyebrow">Pago simulado</div>
+  <h1>Resumen de su compra</h1>
+  <div class="recibo">
+    <div class="r"><span>Plan Radiografía · 1 medición</span><b>${pesos(PRECIO)}</b></div>
+    <div class="r"><span>Total</span><b>${pesos(PRECIO)}</b></div>
+  </div>
+  <form class="card" id="fPago" novalidate>
+    <h3>Datos de quien compra</h3>
+    <div class="campo"><label for="cNom">Nombre completo *</label><input id="cNom" type="text" autocomplete="name" value="${esc(S.comprador.nombre)}">${e.cNom?`<span class="error">${e.cNom}</span>`:''}</div>
+    <div class="campo"><label for="cCargo">Cargo</label><input id="cCargo" type="text" placeholder="Rector(a)" value="${esc(S.comprador.cargo)}"></div>
+    <div class="campo"><label for="cCorreo">Correo *</label><input id="cCorreo" type="email" autocomplete="email" value="${esc(S.comprador.correo)}">${e.cCorreo?`<span class="error">${e.cCorreo}</span>`:''}</div>
+    <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+      <legend style="font-weight:700;margin-bottom:8px">Medio de pago</legend>
+      <div class="opciones">
+        <label class="opcion"><input type="radio" name="medio" value="pse" ${S.medio==='pse'?'checked':''}>PSE</label>
+        <label class="opcion"><input type="radio" name="medio" value="transf" ${S.medio==='transf'?'checked':''}>Transferencia bancaria</label>
+      </div>
+    </fieldset>
+    <p class="tenue">Esta demostración no pide datos de tarjeta, cuentas ni contraseñas.</p>
+    ${S.pagando?`<div class="pagando" role="status"><span class="spin"></span>Procesando pago de demostración…</div>`:`<button class="btn" type="submit">Simular pago</button>`}
+  </form>
+</section>`};
+
+P[4]=()=>{const r=S.recibo;return`
+<section class="pantalla">
+  <div class="eyebrow">Confirmación</div>
+  <h1>¡Listo, ${esc(S.comprador.nombre.split(' ')[0])}! Su compra quedó registrada.</h1>
+  <div class="recibo">
+    <span class="sello">COMPROBANTE DE DEMOSTRACIÓN</span>
+    <div class="r"><span>Número</span><b>${r.num}</b></div>
+    <div class="r"><span>Fecha</span><b>${r.fecha}</b></div>
+    <div class="r"><span>Medio</span><b>${S.medio==='pse'?'PSE':'Transferencia'}</b></div>
+    <div class="r"><span>Valor</span><b>${pesos(PRECIO)}</b></div>
+  </div>
+  <div class="card" style="background:var(--suave)">
+    <p>✉ Te enviamos un correo a <b>${esc(S.comprador.correo)}</b> con este comprobante. <span class="tenue">(Simulado: no se envía nada.)</span></p>
+  </div>
+  <div class="card">
+    <h2>Qué sigue</h2>
+    <div class="pasos">
+      <div class="paso"><span class="num">1</span><p><b>Inscriba su colegio</b>: nombre, logo, responsable y grupos. Toma 2 minutos.</p></div>
+      <div class="paso"><span class="num">2</span><p><b>Comparta los enlaces</b> con los directores de grupo.</p></div>
+      <div class="paso"><span class="num">3</span><p><b>Vea los resultados</b> en su tablero apenas cada grupo complete el mínimo.</p></div>
+    </div>
+  </div>
+  <div class="accion"><button class="btn" type="button" onclick="S.sub=1;ir(5)">Inscribir mi colegio</button></div>
+</section>`};
+
+P[5]=()=>{const e=S.errores,c=S.colegio,rp=S.resp,sub=S.sub;
+const cab=`<div class="subpasos" aria-label="Paso ${sub} de 3"><span class="${sub===1?'on':''}">1. Colegio</span><span class="${sub===2?'on':''}">2. Responsable</span><span class="${sub===3?'on':''}">3. Grupos</span></div>`;
+const err=k=>e[k]?`<span class="error">${e[k]}</span>`:'';
+let cuerpo='';
+if(sub===1)cuerpo=`
+  <div class="campo"><label for="iNom">Nombre del colegio *</label><input id="iNom" type="text" value="${esc(c.nombre)}">${err('iNom')}</div>
+  <div class="campo"><span style="font-weight:700">Logo *</span>
+    <div class="fila"><div class="logo-prev" id="logoPrev">${c.logo?logoHTML():'Sin logo'}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><label class="btn sec chico" for="iLogo" style="font-weight:700">Subir logo</label><input id="iLogo" type="file" accept="image/png,image/jpeg" style="position:absolute;opacity:0;width:1px;height:1px"><span class="ayuda">PNG o JPG. Se queda en este dispositivo.</span></div></div>${err('iLogo')}</div>
+  <div class="campo"><label for="iCiudad">Ciudad y departamento *</label><input id="iCiudad" type="text" placeholder="Barranquilla, Atlántico" value="${esc(c.ciudad)}">${err('iCiudad')}</div>
+  <div class="campo"><label for="iNit">NIT <span class="ayuda">(opcional)</span></label><input id="iNit" type="text" value="${esc(c.nit)}"></div>
+  <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">Calendario</legend>
+    <div class="opciones"><label class="opcion"><input type="radio" name="cal" value="A" ${c.cal==='A'?'checked':''}>Calendario A</label><label class="opcion"><input type="radio" name="cal" value="B" ${c.cal==='B'?'checked':''}>Calendario B</label></div></fieldset>`;
+if(sub===2)cuerpo=`
+  <div class="campo"><label for="rNom">Nombre y cargo *</label><input id="rNom" type="text" placeholder="Ana Pérez, Rectora" value="${esc(rp.nombre)}">${err('rNom')}</div>
+  <div class="campo"><label for="rCorreo">Correo *</label><input id="rCorreo" type="email" value="${esc(rp.correo)}">${err('rCorreo')}</div>
+  <div class="campo"><label for="rCel">Celular / WhatsApp *</label><input id="rCel" type="tel" inputmode="tel" value="${esc(rp.cel)}">${err('rCel')}</div>
+  <div class="campo"><label for="rOri">Orientador(a) o psicólogo(a) de contacto</label><input id="rOri" type="text" placeholder="Nombre y cómo encontrarlo" value="${esc(rp.orientador)}"><span class="ayuda">Aparece en la ruta de ayuda al final de la encuesta.</span></div>`;
+if(sub===3)cuerpo=`
+  <div class="campo"><span style="font-weight:700">Grados y cursos que participan *</span>
+    <div id="gruposLista" style="display:flex;flex-direction:column;gap:8px">
+    ${S.grupos.map((g,i)=>`<div class="grupo-fila">
+      <div class="campo"><label for="gN${i}" class="ayuda">Curso</label><input id="gN${i}" data-g="${i}" data-k="nombre" type="text" placeholder="9°A" value="${esc(g.nombre)}"></div>
+      <div class="campo"><label for="gE${i}" class="ayuda">Estudiantes</label><input id="gE${i}" data-g="${i}" data-k="n" type="number" min="1" max="60" inputmode="numeric" value="${esc(g.n)}"></div>
+      <button type="button" class="quitar" aria-label="Quitar ${esc(g.nombre||'curso')}" data-quitar="${i}" ${S.grupos.length===1?'disabled':''}>✕</button></div>`).join('')}
+    </div>
+    <button type="button" class="enlace" id="addGrupo" style="text-align:left">+ Agregar curso</button>${err('grupos')}
+    <span class="ayuda">Cada grupo necesita al menos ${MINIMO} respuestas para mostrar resultados.</span></div>
+  <div class="grid">
+    <div class="campo"><label for="fDesde">Encuesta abierta desde</label><input id="fDesde" type="date" value="${S.fechas.desde}"></div>
+    <div class="campo"><label for="fHasta">Hasta</label><input id="fHasta" type="date" value="${S.fechas.hasta}"></div>
+  </div>
+  <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">¿Cómo gestionará el consentimiento de padres? *</legend>
+    <div class="opciones">${[['circular','Circular física'],['correo','Correo'],['plataforma','Plataforma del colegio']].map(([v,t])=>`<label class="opcion"><input type="radio" name="consent" value="${v}" ${S.consent===v?'checked':''}>${t}</label>`).join('')}</div>${err('consent')}
+    <span class="ayuda">Le generamos una carta modelo para enviar.</span></fieldset>
+  <label class="opcion" style="align-items:flex-start;font-weight:400"><input id="aut" type="checkbox" ${S.autoriza?'checked':''} style="margin-top:3px"><span>Autorizo el tratamiento de datos según la Ley 1581 de 2012. Las respuestas son anónimas y solo se muestran agregadas por grupo. <span class="tenue">[Texto legal por revisar con asesor]</span> *</span></label>${err('aut')}`;
+return`
+<section class="pantalla">
+  <div class="eyebrow">Inscripción</div>
+  <h1>Inscriba su colegio</h1>
+  ${cab}
+  <form class="card" id="fIns" novalidate>
+    ${cuerpo}
+    <div class="accion">
+      <button class="btn" type="submit">${sub<3?'Siguiente':'Enviar inscripción'}</button>
+      ${sub>1?`<button class="btn sec" type="button" id="subAtras">Paso anterior</button>`:''}
+    </div>
+  </form>
+  <button type="button" class="enlace" id="ejemplo">Rellenar con datos de ejemplo</button>
+</section>`};
+
+P[6]=()=>{const g=gruposValidos(),total=g.reduce((a,x)=>a+ +x.n,0);return`
+<section class="pantalla">
+  <div class="eyebrow">Activación</div>
+  <div class="colegio"><div class="logo">${logoHTML()}</div><div><h1>${esc(S.colegio.nombre)}</h1><p class="tenue">${esc(S.colegio.ciudad)} · Calendario ${S.colegio.cal}</p></div></div>
+  <div class="card">
+    <h3>Resumen de lo inscrito</h3>
+    <p><b>Responsable:</b> ${esc(S.resp.nombre)} · ${esc(S.resp.correo)}</p>
+    <p><b>Grupos:</b> ${g.map(x=>`${esc(x.nombre)} (${esc(x.n)})`).join(', ')} · ${total} estudiantes</p>
+    <p><b>Encuesta abierta:</b> ${fecha(S.fechas.desde)} a ${fecha(S.fechas.hasta)}</p>
+  </div>
+  <div class="card">
+    <h3>Verificando su colegio</h3>
+    <ul class="lista-ver" id="verif">
+      ${['Pago confirmado','Datos del colegio completos','Logo cargado','Autorización de datos aceptada',`${g.length} enlace${g.length>1?'s':''} de encuesta creado${g.length>1?'s':''}`].map(t=>`<li><span class="caja"></span>${t}</li>`).join('')}
+    </ul>
+    <div id="estadoActivo" hidden><span class="activo">Colegio activo</span></div>
+  </div>
+  <div class="accion"><button class="btn" type="button" id="irPanel" disabled onclick="ir(7)">Ir a mi panel</button></div>
+</section>`};
+
+P[7]=()=>{const rs=respuestasActuales();const total=rs.reduce((a,x)=>a+x.est.length,0),metaT=rs.reduce((a,x)=>a+x.meta,0);return`
+<section class="pantalla">
+  <div class="tab-head"><div class="colegio"><div class="logo">${logoHTML()}</div><div><div class="eyebrow">Envío de encuestas</div><h1>${esc(S.colegio.nombre)}</h1></div></div></div>
+  <p class="lead">Comparta un enlace por grupo. Los estudiantes responden desde su celular, sin crear cuenta y sin dar su nombre.</p>
+  <div class="card">
+    <div class="fila" style="justify-content:space-between"><h3>Respuestas recibidas</h3><span class="contador" id="contador">${total} / ${metaT}</span></div>
+    ${rs.map(x=>`<div class="campo"><div class="fila" style="justify-content:space-between"><span>${esc(x.g.nombre)}</span><span class="tenue">${x.est.length} de ${x.meta} esperadas</span></div><div class="barra-meta"><div style="width:${x.est.length/x.meta*100}%"></div></div></div>`).join('')}
+    <div class="accion">
+      ${S.sim<2?`<button class="btn" type="button" id="simular">${S.sim===0?'Simular respuestas':'Simular más respuestas'}</button>`:''}
+      ${S.sim>0?`<button class="btn ${S.sim<2?'sec':''}" type="button" onclick="ir(8)">Ver resultados</button>`:''}
+    </div>
+    ${S.sim===1?`<p class="tenue">Algunos grupos aún no llegan a ${MINIMO} respuestas: sus resultados quedan ocultos para proteger el anonimato.</p>`:''}
+  </div>
+  <div class="grid">
+  ${rs.map(x=>{const url=enlaceGrupo(x.g);return`<div class="card">
+    <h3>${esc(x.g.nombre)}</h3>
+    <div class="fila" style="align-items:flex-start"><div class="qr" data-qr="${esc(url)}"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1"><div class="link-box">${esc(url)}</div><button class="btn sec chico" type="button" data-copiar="${esc(url)}">Copiar enlace</button></div></div>
+  </div>`}).join('')}
+  </div>
+  <div class="card">
+    <h3>Mensaje de WhatsApp para directores de grupo</h3>
+    <div class="pre" id="msgWa">${esc(mensajeWa())}</div>
+    <div><button class="btn sec chico" type="button" id="copiarWa">Copiar mensaje</button></div>
+    <p class="tenue">Vista previa: la demo no envía mensajes.</p>
+  </div>
+  <details class="card">
+    <summary>Carta de autorización para padres (modelo)</summary>
+    <div class="pre">${esc(cartaPadres())}</div>
+    <p class="tenue">Modelo por revisar con un asesor antes de usarlo con familias reales.</p>
+  </details>
+  <div class="card" style="background:var(--suave)">
+    <h3>¿Qué ve un estudiante?</h3>
+    <p>Abra la encuesta tal como la verá un estudiante. Lo que responda aquí no se suma a los resultados.</p>
+    <div><button class="btn sec" type="button" id="verEnc">Ver la encuesta como estudiante</button></div>
+    <div id="encuesta"></div>
+  </div>
+</section>`};
+
+function mensajeWa(){const gs=gruposValidos();return `Hola, profe. Desde ${S.colegio.nombre} vamos a aplicar la Radiografía de la Mente Infantil de Camino, una encuesta anónima de 10 minutos sobre bienestar y aprendizaje.
+
+Por favor compártala con su grupo entre el ${fecha(S.fechas.desde)} y el ${fecha(S.fechas.hasta)}:
+${gs.map(g=>`• ${g.nombre}: ${enlaceGrupo(g)}`).join('\n')}
+
+No piden nombre ni correo. Gracias.
+${S.resp.nombre}`}
+function cartaPadres(){const m={circular:'circular física',correo:'correo electrónico',plataforma:'la plataforma del colegio'}[S.consent]||'';return `${S.colegio.ciudad}, ${fecha(iso(new Date()))}
+
+Estimadas familias:
+
+${S.colegio.nombre} aplicará entre el ${fecha(S.fechas.desde)} y el ${fecha(S.fechas.hasta)} la Radiografía de la Mente Infantil, una encuesta anónima sobre motivación, presión académica y clima escolar, en los grupos ${gruposValidos().map(g=>g.nombre).join(', ')}.
+
+• La encuesta no pide nombre, documento ni correo del estudiante.
+• Los resultados se ven solo agregados por grupo, nunca de forma individual.
+• El estudiante puede decidir no responder o detenerse cuando quiera.
+
+Si NO autoriza la participación de su hijo(a), por favor infórmelo por ${m} antes del ${fecha(S.fechas.desde)}.
+
+Cordialmente,
+${S.resp.nombre}`}
+
+P[8]=()=>{
+  const rs=respuestasActuales();
+  const visibles=rs.filter(x=>x.est.length>=MINIMO);
+  const sel=S.filtro==='todos'?visibles:visibles.filter(x=>x.g.nombre===S.filtro);
+  const oculto=S.filtro!=='todos'?rs.find(x=>x.g.nombre===S.filtro&&x.est.length<MINIMO):null;
+  const est=sel.flatMap(x=>x.est);
+  const A=est.length?agregado(est):null;
+  const filtros=`<div class="filtros" role="group" aria-label="Filtrar por grupo"><button class="filtro" type="button" data-f="todos" aria-pressed="${S.filtro==='todos'}">Todos</button>${rs.map(x=>`<button class="filtro" type="button" data-f="${esc(x.g.nombre)}" aria-pressed="${S.filtro===x.g.nombre}">${esc(x.g.nombre)}</button>`).join('')}</div>`;
+  let cuerpo='';
+  if(oculto){cuerpo=`<div class="protegido"><b>${esc(oculto.g.nombre)}: faltan ${MINIMO-oculto.est.length} respuestas para proteger el anonimato.</b><p class="tenue">Con menos de ${MINIMO} respuestas sería posible identificar a un estudiante, así que no mostramos resultados.</p></div>`}
+  else if(!A){cuerpo=`<div class="protegido"><b>Aún no hay grupos con ${MINIMO} respuestas.</b><p class="tenue">Vuelva a la pantalla anterior y simule respuestas.</p></div>`}
+  else{
+    const s=semaforo(A.ISCE),C=2*Math.PI*62;
+    const recos=['IAA','IPSP','ICERE'].filter(k=>A[k]<50).map(k=>({t:INDICES[k].nombre,...INDICES[k]}));
+    if(A.autent<80)recos.push({t:'Autenticidad de las respuestas',...RECO_IART});
+    const ocultos=S.filtro==='todos'?rs.filter(x=>x.est.length<MINIMO):[];
+    cuerpo=`
+    ${ocultos.map(x=>`<div class="protegido"><b>${esc(x.g.nombre)}: faltan ${MINIMO-x.est.length} respuestas para proteger el anonimato.</b> No se incluye en el total.</div>`).join('')}
+    ${A.flagPct>20?`<div class="banner" role="status">Alta propensión a deseabilidad social: el ${f1(A.flagPct)} % de las encuestas muestran respuestas idealizadas. Lea los resultados con cautela.</div>`:''}
+    <div class="card">
+      <div class="isce">
+        <div class="anillo"><svg viewBox="0 0 150 150" width="150" height="150" aria-hidden="true"><circle cx="75" cy="75" r="62" fill="none" stroke="#F4F3E2" stroke-width="14"/><circle cx="75" cy="75" r="62" fill="none" stroke="${s.c}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${C*A.ISCE/100} ${C}" transform="rotate(-90 75 75)"/></svg><div class="v"><div><b>${f1(A.ISCE)}</b><div class="tenue">de 100</div></div></div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+          <div class="eyebrow">Índice global de bienestar (ISCE)</div>
+          <div class="sem" style="font-size:1.3rem"><i style="background:${s.c}"></i>${s.t}</div>
+          <p class="tenue">${A.n} respuestas · autenticidad ${f1(A.autent)} %</p>
+        </div>
+      </div>
+    </div>
+    <div class="grid">
+      ${['IAA','IPSP','ICERE'].map(k=>{const v=A[k],sk=semaforo(v);return`<div class="card indice">
+        <div class="eyebrow">${k}</div><h3>${INDICES[k].nombre}</h3>
+        <div class="fila" style="justify-content:space-between"><span class="valor">${f1(v)}</span><span class="sem"><i style="background:${sk.c}"></i>${sk.t}</span></div>
+        <div class="barra-i"><div style="width:${v}%;background:${sk.c}"></div></div></div>`}).join('')}
+    </div>
+    <p class="formula">Cálculo: 35 % × ${f1(A.IAA)} + 35 % × ${f1(A.IPSP)} + 30 % × ${f1(A.ICERE)} = ${f1(A.ISCE)}</p>
+    <div class="card">
+      <h2>Qué hacer</h2>
+      ${recos.length?recos.map(r=>`<div class="reco"><b>${r.t}</b><span class="tenue">${r.diag}</span><span>→ ${r.sol}</span></div>`).join(''):'<p>Ningún índice está bajo 50. Recomendación: mantener y consolidar las prácticas actuales.</p>'}
+    </div>
+    ${S.filtro==='todos'&&visibles.length>1?`<div class="card"><h3>Comparación por grupo</h3><div class="tabla-wrap"><table><thead><tr><th>Grupo</th><th>Resp.</th><th>Global</th><th>IAA</th><th>IPSP</th><th>ICERE</th></tr></thead><tbody>
+      ${visibles.map(x=>{const a=agregado(x.est);return`<tr><td>${esc(x.g.nombre)}</td><td>${a.n}</td><td><span class="sem"><i style="background:${semaforo(a.ISCE).c}"></i>${f1(a.ISCE)}</span></td><td>${f1(a.IAA)}</td><td>${f1(a.IPSP)}</td><td>${f1(a.ICERE)}</td></tr>`}).join('')}
+    </tbody></table></div></div>`:''}
+    <div class="accion"><button class="btn sec" type="button" id="btnInforme" aria-expanded="${S.verInforme}">${S.verInforme?'Ocultar informe':'Ver informe'}</button></div>
+    ${S.verInforme?informe(A,recos):''}`;
+  }
+  return`
+<section class="pantalla">
+  <div class="tab-head"><div class="colegio"><div class="logo">${logoHTML()}</div><div><div class="eyebrow">Tablero de resultados</div><h1>${esc(S.colegio.nombre)}</h1></div></div>
+  <div class="marcas"><span class="tag ejemplo">Datos de ejemplo</span><span class="tag agregado">Resultados agregados; nunca individuales</span></div></div>
+  ${filtros}
+  ${cuerpo}
+  <div class="accion"><button class="btn" type="button" onclick="ir(9)">Terminar recorrido</button></div>
+</section>`};
+
+function informe(A,recos){const s=semaforo(A.ISCE);return`
+<article class="informe" aria-label="Vista previa del informe">
+  <div class="colegio"><div class="logo">${logoHTML()}</div><div><h2>Informe · Radiografía de la Mente Infantil</h2><p class="tenue">${esc(S.colegio.nombre)} · ${esc(S.colegio.ciudad)} · ${S.filtro==='todos'?'Todos los grupos':esc(S.filtro)}</p></div></div>
+  <p><b>Índice global:</b> ${f1(A.ISCE)} / 100 · ${s.t}. Basado en ${A.n} respuestas anónimas, autenticidad ${f1(A.autent)} %.</p>
+  <p><b>Índices:</b> Autodeterminación ${f1(A.IAA)} · Presión por expectativas ${f1(A.IPSP)} · Clima emocional ${f1(A.ICERE)}.</p>
+  <div><b>Recomendaciones:</b><ul>${recos.length?recos.map(r=>`<li>${r.sol}</li>`).join(''):'<li>Mantener y consolidar las prácticas actuales.</li>'}</ul></div>
+  <p class="tenue">Datos de ejemplo. Resultados agregados; nunca individuales. En la versión real, este informe se descarga en PDF.</p>
+  <p class="tenue">Camino · con el acompañamiento de VerdeSer</p>
+</article>`}
+
+P[9]=()=>{const c=S.cierre;
+if(S.enviado)return`
+<section class="pantalla">
+  <div class="eyebrow">Cierre</div>
+  <h1>Gracias por recorrer Camino.</h1>
+  <p class="lead">Sus respuestas nos ayudan a saber si este producto sirve de verdad a los colegios.</p>
+  <div class="card"><h3>Sus respuestas</h3><div class="pre" id="resumenCierre">${esc(resumenCierre())}</div>
+  <div><button class="btn sec chico" type="button" id="copiarCierre">Copiar respuestas</button></div>
+  <p class="tenue">En esta demostración las respuestas no se guardan. El equipo puede copiarlas ahora.</p></div>
+  <div class="accion"><button class="btn" type="button" onclick="document.getElementById('btnReiniciar').click()">Reiniciar demo</button></div>
+</section>`;
+const radios=(n,ops)=>`<div class="opciones">${ops.map(o=>`<label class="opcion"><input type="radio" name="${n}" value="${o}" ${c[n]===o?'checked':''}>${o}</label>`).join('')}</div>`;
+return`
+<section class="pantalla">
+  <div class="eyebrow">Cierre</div>
+  <h1>Cuatro preguntas rápidas</h1>
+  <p class="lead">Su opinión nos dice si vamos por buen camino.</p>
+  <form class="card" id="fCierre" novalidate>
+    <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">1. ¿Entendió qué ofrece Camino en los primeros 30 segundos?</legend>${radios('entendio',['Sí','Más o menos','No'])}</fieldset>
+    <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">2. ¿Los resultados le servirían para decidir algo en su colegio?</legend>${radios('sirve',['Sí, mucho','Un poco','No'])}</fieldset>
+    <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">3. ¿Pagaría ${pesos(PRECIO)} por una medición?</legend>${radios('pagaria',['Sí','Tal vez, a otro precio','No'])}</fieldset>
+    <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">4. Del 0 al 10, ¿qué tan probable es que lo recomiende a otro colegio?</legend>
+      <div class="escala10">${Array.from({length:11},(_,i)=>`<label><input type="radio" name="nps" value="${i}" ${c.nps===String(i)?'checked':''}>${i}</label>`).join('')}</div></fieldset>
+    <div class="campo"><label for="coment">¿Algo que cambiaría? <span class="ayuda">(opcional)</span></label><textarea id="coment">${esc(c.comentario)}</textarea></div>
+    ${S.errores.cierre?`<span class="error">${S.errores.cierre}</span>`:''}
+    <button class="btn" type="submit">Enviar respuestas</button>
+  </form>
+</section>`};
+function resumenCierre(){const c=S.cierre;return `Colegio: ${S.colegio.nombre}
+1. ¿Entendió en 30 s?: ${c.entendio}
+2. ¿Le sirven los resultados?: ${c.sirve}
+3. ¿Pagaría ${pesos(PRECIO)}?: ${c.pagaria}
+4. Recomendación (0–10): ${c.nps}
+Comentario: ${c.comentario||'—'}`}
+
+/* ---------- Encuesta de estudiante (vista previa) ---------- */
+function renderEnc(){
+  const box=$('#encuesta');if(!box)return;const E=S.enc;if(!E){box.innerHTML='';return}
+  const logo=`<div class="colegio"><div class="logo" style="width:44px;height:44px">${logoHTML()}</div><b>${esc(S.colegio.nombre)}</b></div>`;
+  let h='';
+  if(E.fase==='asent')h=`${logo}<h3>Antes de empezar</h3>
+    <p>Esta encuesta es sobre cómo te sientes estudiando. <b>No te pedimos tu nombre</b> y nadie del colegio podrá ver tus respuestas individuales.</p>
+    <p>Puedes dejar preguntas sin responder o salir cuando quieras.</p>
+    <button class="btn" type="button" data-enc="acepto">Quiero participar</button>
+    <button class="btn sec" type="button" data-enc="cerrar">Prefiero no participar</button>`;
+  if(E.fase==='grado'){const gs=gruposValidos();h=`${logo}<h3>¿En qué curso estás?</h3>
+    <div class="campo"><label for="encGrado">Curso</label><select id="encGrado"><option value="">Elige tu curso</option>${gs.map(g=>`<option ${E.grado===g.nombre?'selected':''}>${esc(g.nombre)}</option>`).join('')}</select></div>
+    <p class="ayuda">Solo pedimos el curso. Nada de nombre ni alias.</p>
+    <button class="btn" type="button" data-enc="empezar" ${E.grado?'':'disabled'}>Empezar</button>`}
+  if(E.fase==='preg'){const p=PREG[E.i],esc4=p[2]==='f'?ESC_FREC:ESC_ACU;h=`
+    <div class="fila" style="justify-content:space-between"><span class="tenue">Pregunta ${E.i+1} de 18</span><button class="enlace" type="button" data-enc="anterior" ${E.i===0?'disabled':''}>← Anterior</button></div>
+    <div class="mini-prog"><div style="width:${(E.i)/18*100}%"></div></div>
+    <p style="font-size:1.1rem;font-weight:500">${p[4]}</p>
+    <div class="opt-escala">${esc4.map((t,j)=>`<button type="button" data-resp="${j+1}" aria-pressed="${E.r[E.i]===j+1}">${t}</button>`).join('')}</div>`}
+  if(E.fase==='fin')h=`${logo}<h3>¡Gracias! Tu respuesta quedó registrada.</h3>
+    <div class="card" style="background:var(--papel)"><b>Si algo de esto te hizo sentir mal, no estás solo/a.</b>
+    <p>Puedes hablar con: <b>${esc(S.resp.orientador||'[orientador(a) del colegio]')}</b></p>
+    <p>Línea de ayuda: <b>[LÍNEA DE AYUDA]</b></p></div>
+    <p class="tenue">(Vista previa: esta respuesta no se suma a los resultados.)</p>
+    <button class="btn sec" type="button" data-enc="cerrar">Cerrar vista previa</button>`;
+  box.innerHTML=`<div class="telefono" style="margin-top:12px">${h}</div>`;
+  const sg=$('#encGrado');if(sg)sg.onchange=()=>{E.grado=sg.value;renderEnc()};
+}
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-enc],[data-resp]');if(!b||!S.enc)return;const E=S.enc;
+  if(b.dataset.resp){E.r[E.i]=+b.dataset.resp;renderEnc();timers.push(setTimeout(()=>{if(E.i<17)E.i++;else E.fase='fin';renderEnc()},300));return}
+  const a=b.dataset.enc;
+  if(a==='acepto')E.fase='grado';
+  if(a==='empezar')E.fase='preg';
+  if(a==='anterior'&&E.i>0)E.i--;
+  if(a==='cerrar'){S.enc=null}
+  renderEnc();
+});
+
+/* ---------- Render y eventos por pantalla ---------- */
+function render(){
+  renderBarra();
+  $('#app').innerHTML=P[S.paso]();
+  enlazar[S.paso]&&enlazar[S.paso]();
+}
+const enlazar={};
+enlazar[3]=()=>{
+  $('#fPago').onsubmit=ev=>{ev.preventDefault();
+    S.comprador={nombre:$('#cNom').value.trim(),cargo:$('#cCargo').value.trim(),correo:$('#cCorreo').value.trim()};
+    S.medio=(document.querySelector('input[name=medio]:checked')||{}).value||'pse';
+    S.errores={};
+    if(!S.comprador.nombre)S.errores.cNom='Escriba su nombre.';
+    if(!/^\S+@\S+\.\S+$/.test(S.comprador.correo))S.errores.cCorreo='Escriba un correo válido, por ejemplo rectoria@colegio.edu.co.';
+    if(Object.keys(S.errores).length){render();return}
+    S.pagando=true;render();
+    timers.push(setTimeout(()=>{S.pagando=false;const d=new Date();
+      S.recibo={num:'DEMO-'+d.getFullYear()+'-'+String(Math.floor(1000+Math.random()*9000)),fecha:d.toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})};
+      if(!S.resp.nombre)S.resp.nombre=S.comprador.nombre+(S.comprador.cargo?', '+S.comprador.cargo:'');
+      if(!S.resp.correo)S.resp.correo=S.comprador.correo;
+      ir(4)},2000));
+  };
+};
+enlazar[5]=()=>{
+  const guardar=()=>{
+    if(S.sub===1){S.colegio.nombre=$('#iNom').value.trim();S.colegio.ciudad=$('#iCiudad').value.trim();S.colegio.nit=$('#iNit').value.trim();S.colegio.cal=(document.querySelector('input[name=cal]:checked')||{}).value||'A'}
+    if(S.sub===2){S.resp={nombre:$('#rNom').value.trim(),correo:$('#rCorreo').value.trim(),cel:$('#rCel').value.trim(),orientador:$('#rOri').value.trim()}}
+    if(S.sub===3){document.querySelectorAll('[data-g]').forEach(i=>S.grupos[+i.dataset.g][i.dataset.k]=i.value.trim());
+      S.fechas={desde:$('#fDesde').value,hasta:$('#fHasta').value};S.consent=(document.querySelector('input[name=consent]:checked')||{}).value||'';S.autoriza=$('#aut').checked}
+  };
+  const validar=()=>{const e={};
+    if(S.sub===1){if(!S.colegio.nombre)e.iNom='Escriba el nombre del colegio.';if(!S.colegio.logo)e.iLogo='Suba el logo: aparecerá en el panel, la encuesta y el informe.';if(!S.colegio.ciudad)e.iCiudad='Escriba la ciudad y el departamento.'}
+    if(S.sub===2){if(!S.resp.nombre)e.rNom='Escriba nombre y cargo.';if(!/^\S+@\S+\.\S+$/.test(S.resp.correo))e.rCorreo='Escriba un correo válido.';if(S.resp.cel.replace(/\D/g,'').length<7)e.rCel='Escriba un número de celular.'}
+    if(S.sub===3){if(!gruposValidos().length||S.grupos.some(g=>(g.nombre&&!(+g.n>0))||(!g.nombre&&g.n)))e.grupos='Escriba cada curso con su número de estudiantes.';if(!S.consent)e.consent='Elija cómo avisará a los padres.';if(!S.autoriza)e.aut='Debe aceptar la autorización de datos para activar el colegio.'}
+    S.errores=e;return !Object.keys(e).length};
+  $('#fIns').onsubmit=ev=>{ev.preventDefault();guardar();if(!validar()){render();const f=document.querySelector('.error');f&&f.scrollIntoView({block:'center'});return}
+    if(S.sub<3){S.sub++;S.errores={};render();window.scrollTo({top:0})}else{S.grupos=gruposValidos();ir(6)}};
+  const sa=$('#subAtras');if(sa)sa.onclick=()=>{guardar();S.sub--;S.errores={};render()};
+  const lg=$('#iLogo');if(lg)lg.onchange=()=>{const f=lg.files[0];if(!f)return;if(!/image\/(png|jpeg)/.test(f.type)){S.errores.iLogo='El logo debe ser PNG o JPG.';guardar();render();return}
+    const rd=new FileReader();rd.onload=()=>{guardar();S.colegio.logo=rd.result;delete S.errores.iLogo;render()};rd.readAsDataURL(f)};
+  const ag=$('#addGrupo');if(ag)ag.onclick=()=>{guardar();S.grupos.push({nombre:'',n:''});render();const u=document.querySelectorAll('[data-k=nombre]');u[u.length-1].focus()};
+  document.querySelectorAll('[data-quitar]').forEach(b=>b.onclick=()=>{guardar();S.grupos.splice(+b.dataset.quitar,1);render()});
+  $('#ejemplo').onclick=()=>{guardar();
+    S.colegio={nombre:'Colegio Ejemplo San Martín',logo:logoEjemplo(),ciudad:'Barranquilla, Atlántico',nit:'',cal:'A'};
+    S.resp={nombre:S.resp.nombre||'Ana Pérez, Rectora',correo:S.resp.correo||'rectoria@ejemplo.edu.co',cel:'300 000 0000',orientador:'Laura Gómez, psicóloga (oficina de bienestar)'};
+    S.grupos=[{nombre:'9°A',n:'30'},{nombre:'9°B',n:'30'}];S.consent='circular';S.autoriza=true;S.errores={};render()};
+};
+function logoEjemplo(){const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');
+  x.fillStyle='#1F4E79';x.beginPath();x.moveTo(80,8);x.lineTo(148,36);x.lineTo(140,110);x.quadraticCurveTo(80,156,80,156);x.quadraticCurveTo(80,156,20,110);x.lineTo(12,36);x.closePath();x.fill();
+  x.fillStyle='#FFFFFF';x.font='bold 54px Georgia,serif';x.textAlign='center';x.textBaseline='middle';x.fillText('SM',80,82);return c.toDataURL('image/png')}
+enlazar[6]=()=>{
+  const li=document.querySelectorAll('#verif li');
+  li.forEach((l,i)=>timers.push(setTimeout(()=>l.classList.add('ok'),500+i*550)));
+  timers.push(setTimeout(()=>{$('#estadoActivo').hidden=false;$('#irPanel').disabled=false},500+li.length*550));
+};
+enlazar[7]=()=>{
+  document.querySelectorAll('[data-qr]').forEach(el=>{
+    if(window.QRCode){try{new QRCode(el,{text:el.dataset.qr,width:128,height:128,colorDark:'#2F3A22',colorLight:'#FFFFFF',correctLevel:QRCode.CorrectLevel.M})}catch(e){el.textContent='QR no disponible'}}
+    else el.textContent='QR no disponible sin conexión';
+  });
+  document.querySelectorAll('[data-copiar]').forEach(b=>b.onclick=()=>copiar(b.dataset.copiar,b));
+  $('#copiarWa').onclick=e=>copiar(mensajeWa(),e.currentTarget);
+  const sim=$('#simular');if(sim)sim.onclick=()=>{const antes=respuestasActuales().reduce((a,x)=>a+x.est.length,0);S.sim++;const rs=respuestasActuales(),despues=rs.reduce((a,x)=>a+x.est.length,0),metaT=rs.reduce((a,x)=>a+x.meta,0);
+    const y=window.scrollY;render();window.scrollTo({top:y});
+    const cont=$('#contador');let n=antes;const paso=Math.max(1,Math.ceil((despues-antes)/25));
+    const tick=()=>{n=Math.min(despues,n+paso);cont.textContent=`${n} / ${metaT}`;if(n<despues)timers.push(setTimeout(tick,40))};tick()};
+  $('#verEnc').onclick=()=>{S.enc={fase:'asent',grado:'',i:0,r:Array(18).fill(0)};renderEnc();$('#encuesta').scrollIntoView({behavior:'smooth',block:'start'})};
+  renderEnc();
+};
+enlazar[8]=()=>{
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.filtro=b.dataset.f;const y=window.scrollY;render();window.scrollTo({top:y})});
+  const bi=$('#btnInforme');if(bi)bi.onclick=()=>{S.verInforme=!S.verInforme;const y=window.scrollY;render();window.scrollTo({top:y})};
+};
+enlazar[9]=()=>{
+  const f=$('#fCierre');
+  if(f)f.onsubmit=ev=>{ev.preventDefault();const v=n=>(document.querySelector(`input[name=${n}]:checked`)||{}).value||'';
+    S.cierre={entendio:v('entendio'),sirve:v('sirve'),pagaria:v('pagaria'),nps:v('nps'),comentario:$('#coment').value.trim()};
+    if(!S.cierre.entendio||!S.cierre.sirve||!S.cierre.pagaria||!S.cierre.nps){S.errores={cierre:'Responda las 4 preguntas para enviar.'};render();return}
+    S.enviado=true;S.errores={};render();window.scrollTo({top:0})};
+  const cc=$('#copiarCierre');if(cc)cc.onclick=()=>copiar(resumenCierre(),cc);
+};
+
+render();
+</script>
+
+</body>
+</html>
